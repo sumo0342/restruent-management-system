@@ -1,0 +1,13 @@
+node_modules/
+.next/
+out/
+build/
+dev.db
+dev.db-journal
+*.db
+*.db-journal
+.env
+.env.local
+coverage/
+.DS_Store
+npm-debug.log*

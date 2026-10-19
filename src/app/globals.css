@@ -1,0 +1,520 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------------------------------------------------------------------
+   DESIGN SYSTEM — DEEP FOREST GREEN & WARM OFF-WHITE
+   A luxury botanical and culinary aesthetic featuring deep pine
+   canvas, frosted emerald acrylic layers, crisp warm off-white typography,
+   tactile die-cut stickers, and luminous status indicators.
+   --------------------------------------------------------------------- */
+
+html {
+  color-scheme: dark;
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #061812;
+  background-image:
+    radial-gradient(ellipse 90% 60% at 15% -10%, rgba(16, 185, 129, 0.22) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 50% at 90% 110%, rgba(52, 211, 153, 0.15) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 50% at 85% 15%, rgba(245, 158, 11, 0.13) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 45% at 30% 90%, rgba(250, 248, 244, 0.08) 0%, transparent 50%),
+    linear-gradient(180deg, #051610 0%, #09241B 50%, #04120D 100%);
+  background-attachment: fixed;
+  color: #FAF8F5;
+  font-size: 15.5px;
+  line-height: 1.55;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, .font-display {
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  color: #FAF8F5;
+}
+
+::selection {
+  background: #10B981;
+  color: #061812;
+}
+
+:root {
+  --glass-bg: rgba(13, 38, 30, 0.72);
+  --glass-bg-hover: rgba(19, 52, 42, 0.85);
+  --glass-border: rgba(250, 248, 244, 0.15);
+  --glass-border-hover: rgba(250, 248, 244, 0.32);
+  --glass-specular: inset 0 1px 0 0 rgba(250, 248, 244, 0.22);
+  --glass-shadow: 0 8px 32px 0 rgba(4, 18, 13, 0.45);
+  --glass-shadow-hover: 0 16px 44px 0 rgba(4, 18, 13, 0.65), 0 0 24px 0 rgba(16, 185, 129, 0.25);
+}
+
+/* ---------------------------------------------------------------------
+   Glass Cards & Panels
+   --------------------------------------------------------------------- */
+
+.card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: var(--glass-shadow), var(--glass-specular);
+  transition: all 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-interactive {
+  @apply card cursor-pointer;
+}
+.card-interactive:hover {
+  background: var(--glass-bg-hover);
+  border-color: var(--glass-border-hover);
+  box-shadow: var(--glass-shadow-hover), inset 0 1px 0 0 rgba(250, 248, 244, 0.28);
+  transform: translateY(-2px);
+}
+.card-interactive:active {
+  transform: translateY(0);
+  box-shadow: var(--glass-shadow);
+}
+
+.card-lift {
+  @apply card;
+}
+.card-lift:hover {
+  background: var(--glass-bg-hover);
+  border-color: var(--glass-border-hover);
+  box-shadow: var(--glass-shadow-hover), inset 0 1px 0 0 rgba(250, 248, 244, 0.28);
+  transform: translateY(-2px);
+}
+
+/* Frosted glass docket ticket */
+.ticket {
+  @apply card relative overflow-hidden;
+  border-top: none;
+}
+.ticket::before {
+  content: "";
+  display: block;
+  height: 2px;
+  background-image: repeating-linear-gradient(
+    to right,
+    rgba(250, 248, 244, 0.35) 0,
+    rgba(250, 248, 244, 0.35) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+}
+
+/* High-level frosted glass panel (modals, auth boxes, prominent hero panels) */
+.glass-panel {
+  position: relative;
+  background: rgba(11, 34, 27, 0.82);
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  border: 1px solid rgba(250, 248, 244, 0.18);
+  border-radius: 20px;
+  box-shadow: 0 24px 64px -12px rgba(3, 14, 10, 0.75), inset 0 1px 0 rgba(250, 248, 244, 0.28);
+}
+
+/* Ensure containers that were bg-white adopt sleek frosted glass styling */
+.bg-white:not(.bg-white-solid):not(.qr-box):not(img):not(svg) {
+  background: rgba(13, 38, 30, 0.80);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-color: rgba(250, 248, 244, 0.14);
+  color: #FAF8F5;
+}
+
+/* ---------------------------------------------------------------------
+   Interactive Buttons
+   --------------------------------------------------------------------- */
+
+.btn {
+  @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed;
+  border-radius: 12px;
+  transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.97) translateY(1px);
+}
+
+/* Primary Radiant Emerald Button — with off-white typography and top rim shine */
+.btn-primary {
+  @apply btn text-white;
+  background: linear-gradient(135deg, #10B981 0%, #059669 60%, #047857 100%);
+  border: 1px solid rgba(250, 248, 244, 0.35);
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #34D399 0%, #10B981 60%, #059669 100%);
+  border-color: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 6px 26px rgba(16, 185, 129, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transform: translateY(-1px);
+}
+
+/* Secondary Frosted Off-White Button */
+.btn-secondary {
+  @apply btn;
+  background: rgba(250, 248, 244, 0.08);
+  color: #FAF8F5;
+  border: 1px solid rgba(250, 248, 244, 0.18);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(250, 248, 244, 0.16);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(250, 248, 244, 0.16);
+  border-color: rgba(250, 248, 244, 0.36);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(250, 248, 244, 0.28);
+  transform: translateY(-1px);
+}
+
+/* Pure Off-White Action Button — bold high-contrast action */
+.btn-offwhite {
+  @apply btn;
+  background: #FAF8F5;
+  color: #061812;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+.btn-offwhite:hover:not(:disabled) {
+  background: #FFFFFF;
+  color: #04120D;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(250, 248, 244, 0.35);
+}
+
+/* Danger Ruby Glass Button */
+.btn-danger {
+  @apply btn;
+  background: rgba(239, 68, 68, 0.16);
+  color: #FCA5A5;
+  border: 1px solid rgba(239, 68, 68, 0.38);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.btn-danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.30);
+  border-color: rgba(239, 68, 68, 0.65);
+  color: #FFFFFF;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.45);
+  transform: translateY(-1px);
+}
+
+/* ---------------------------------------------------------------------
+   Forms & Controls
+   --------------------------------------------------------------------- */
+
+.input {
+  @apply w-full px-3.5 py-2.5 text-sm focus:outline-none disabled:opacity-40;
+  background: rgba(250, 248, 244, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(250, 248, 244, 0.16);
+  border-radius: 12px;
+  color: #FAF8F5;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+  transition: all 160ms ease;
+}
+.input::placeholder {
+  color: rgba(157, 183, 170, 0.65);
+}
+.input:hover:not(:disabled) {
+  border-color: rgba(250, 248, 244, 0.28);
+  background: rgba(250, 248, 244, 0.09);
+}
+.input:focus {
+  background: rgba(250, 248, 244, 0.12);
+  border-color: rgba(16, 185, 129, 0.85);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25), 0 0 20px rgba(16, 185, 129, 0.35);
+}
+
+/* Form selects dropdown options styling */
+select.input option {
+  background-color: #0B261E;
+  color: #FAF8F5;
+}
+
+.label {
+  @apply block text-xs font-semibold uppercase tracking-wider mb-1.5;
+  color: #9DB7AA;
+}
+
+/* ---------------------------------------------------------------------
+   Status Pills & Badges
+   --------------------------------------------------------------------- */
+
+.status-pill {
+  @apply relative inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-semibold tracking-wide;
+  border-radius: 9999px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid currentColor;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  transition: all 200ms ease;
+}
+
+.status-pill.is-live {
+  animation: pill-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes pill-glow {
+  0%, 100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 4px currentColor);
+  }
+  50% {
+    opacity: 0.72;
+    filter: drop-shadow(0 0 1px currentColor);
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Kitchen Display System (KDS) Cards
+   --------------------------------------------------------------------- */
+
+.kds-card {
+  background: rgba(11, 34, 27, 0.78);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(250, 248, 244, 0.15);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(4, 18, 13, 0.5), inset 0 1px 0 rgba(250, 248, 244, 0.18);
+  transition: all 220ms ease;
+}
+.kds-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(250, 248, 244, 0.32);
+  box-shadow: 0 14px 40px rgba(4, 18, 13, 0.6);
+}
+.kds-card.is-oldest {
+  border-color: rgba(245, 158, 11, 0.85);
+  box-shadow: 0 0 24px rgba(245, 158, 11, 0.35), inset 0 1px 0 rgba(250, 248, 244, 0.22);
+}
+.kds-card.is-urgent {
+  animation: urgent-glass-pulse 1.8s ease-in-out infinite;
+  border-color: rgba(239, 68, 68, 0.85);
+}
+
+@keyframes urgent-glass-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5), inset 0 0 14px rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 24px 6px rgba(239, 68, 68, 0.35), inset 0 0 22px rgba(239, 68, 68, 0.45);
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Login & Recovery Scenes
+   --------------------------------------------------------------------- */
+
+.login-scene {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 90% 70% at 20% 0%, rgba(16, 185, 129, 0.32) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 60% at 85% 100%, rgba(52, 211, 153, 0.20) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at 50% 50%, rgba(245, 158, 11, 0.12) 0%, transparent 50%),
+    linear-gradient(165deg, rgba(10, 32, 25, 0.96) 0%, rgba(5, 18, 13, 0.98) 100%);
+  backdrop-filter: blur(20px);
+}
+
+.login-grain {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #10B981 0%, #059669 60%, #047857 100%);
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(250, 248, 244, 0.35);
+}
+
+/* Role tabs switch */
+.role-tab {
+  @apply flex-1 text-center text-sm font-semibold py-2.5 transition-all;
+  border-radius: 10px;
+}
+.role-tab.is-active {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.role-tab:not(.is-active) {
+  color: #9DB7AA;
+}
+.role-tab:not(.is-active):hover {
+  color: #FAF8F5;
+  background: rgba(250, 248, 244, 0.08);
+}
+
+/* ---------------------------------------------------------------------
+   Navigation Rail & Sidebar
+   --------------------------------------------------------------------- */
+
+.nav-rail-item {
+  position: relative;
+  border-radius: 12px;
+  transition: all 180ms ease;
+}
+.nav-rail-item.is-active {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.28) 0%, rgba(52, 211, 153, 0.12) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  color: #FAF8F5;
+  box-shadow: 0 4px 18px rgba(16, 185, 129, 0.25), inset 0 1px 0 rgba(250, 248, 244, 0.25);
+}
+.nav-rail-item.is-active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 9999px;
+  background: #10B981;
+  box-shadow: 0 0 10px #10B981;
+}
+
+/* ---------------------------------------------------------------------
+   Tactile Die-Cut Vinyl Sticker Styling
+   --------------------------------------------------------------------- */
+
+.sticker-cut {
+  position: relative;
+  display: inline-flex;
+  border: 3.5px solid #FFFFFF;
+  border-radius: 20px;
+  background: #FFFFFF;
+  box-shadow:
+    0 12px 28px -6px rgba(0, 0, 0, 0.55),
+    0 6px 12px -4px rgba(0, 0, 0, 0.35),
+    inset 0 1px 1px rgba(255, 255, 255, 0.9);
+  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 260ms ease;
+  user-select: none;
+}
+.sticker-cut:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow:
+    0 18px 36px -6px rgba(0, 0, 0, 0.65),
+    0 8px 16px -4px rgba(0, 0, 0, 0.45);
+}
+
+/* Washi tape sticker mounting effect */
+.washi-tape {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-3deg);
+  width: 48px;
+  height: 14px;
+  background: rgba(254, 243, 199, 0.75);
+  backdrop-filter: blur(2px);
+  border-left: 2px dashed rgba(217, 119, 6, 0.4);
+  border-right: 2px dashed rgba(217, 119, 6, 0.4);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  z-index: 20;
+}
+
+/* ---------------------------------------------------------------------
+   Motion & Animation
+   --------------------------------------------------------------------- */
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translate3d(0, -12px, 0) scale(0.96); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+.animate-page {
+  animation: fade-in-up 340ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-stagger > * {
+  animation: fade-in-up 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.animate-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.animate-stagger > *:nth-child(2) { animation-delay: 35ms; }
+.animate-stagger > *:nth-child(3) { animation-delay: 70ms; }
+.animate-stagger > *:nth-child(4) { animation-delay: 105ms; }
+.animate-stagger > *:nth-child(5) { animation-delay: 140ms; }
+.animate-stagger > *:nth-child(6) { animation-delay: 175ms; }
+.animate-stagger > *:nth-child(7) { animation-delay: 210ms; }
+.animate-stagger > *:nth-child(8) { animation-delay: 245ms; }
+.animate-stagger > *:nth-child(9) { animation-delay: 280ms; }
+.animate-stagger > *:nth-child(10) { animation-delay: 315ms; }
+
+.animate-toast {
+  animation: toast-in 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ---------------------------------------------------------------------
+   Custom Glass Scrollbars
+   --------------------------------------------------------------------- */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(4, 18, 13, 0.45);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(250, 248, 244, 0.18);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.45);
+}
+
+/* ---------------------------------------------------------------------
+   Reduced motion
+   --------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Print — receipts print clean on thermal/paper printers
+   --------------------------------------------------------------------- */
+
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .card, .card-lift, .card-interactive, .ticket, .glass-panel {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    border-color: #ddd !important;
+  }
+}

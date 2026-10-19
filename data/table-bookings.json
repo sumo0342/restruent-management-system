@@ -1,0 +1,22 @@
+[
+  {
+    "id": "book_1792430986668_4kba6",
+    "restaurantId": "6ab4a132044e93752b8d632f",
+    "branchId": "6ab4a132044e93752b8d6330",
+    "customerName": "suman hazra",
+    "customerPhone": "6294413371",
+    "guestCount": 4,
+    "bookingDate": "2026-10-19",
+    "bookingTime": "01:00 PM",
+    "tableId": "6ab4a138044e93752b8d633f",
+    "tableNumber": "06",
+    "status": "CONFIRMED",
+    "specialNotes": null,
+    "reminderSent": false,
+    "lastReminderAt": null,
+    "createdById": "6ab4a137044e93752b8d6333",
+    "createdByName": "Manager Ravi",
+    "createdAt": "2026-10-19T17:29:46.668Z",
+    "updatedAt": "2026-10-19T17:29:46.668Z"
+  }
+]

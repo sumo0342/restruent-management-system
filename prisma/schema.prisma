@@ -1,0 +1,372 @@
+// Restaurant Management System — Prisma schema
+//
+// NOTE ON DATABASE: this project is configured for MongoDB (e.g. a free
+// MongoDB Atlas cluster). A few things follow from that, worth knowing:
+//   1. Every model's @id is a Mongo ObjectId (`@default(auto()) @map("_id")
+//      @db.ObjectId`), and every foreign-key scalar field is typed
+//      `String @db.ObjectId` so Prisma stores/reads it as a real ObjectId
+//      instead of a plain string.
+//   2. Mongo has no autoincrement at all — Order.orderNumber and
+//      Bill.billNumber are assigned manually from a per-restaurant counter
+//      (Restaurant.orderSeq / billSeq) inside a transaction. This also means
+//      you must run against a Mongo **replica set** (Atlas clusters are one
+//      by default, even on the free tier) since Prisma needs one for
+//      multi-document transactions.
+//   3. "Enum" fields (role, status, priority, ...) are plain String columns
+//      rather than Prisma's native enum type. Mongo actually does support
+//      Prisma enums, unlike some SQL engines — they were kept as strings
+//      here for simplicity and portability; the single source of truth for
+//      allowed values is src/lib/enums.ts, used everywhere in the app.
+//   4. Schema changes are applied with `prisma db push` (Mongo has no SQL
+//      migration files, so `prisma migrate dev` isn't available here).
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ---------------------------------------------------------------------------
+// CORE
+// ---------------------------------------------------------------------------
+
+model Restaurant {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  address        String?
+  phone          String?
+  gstin          String?
+  timezone       String   @default("Asia/Kolkata")
+  taxPercent     Float    @default(5)
+  serviceChargePercent Float @default(0)
+  currencySymbol String   @default("₹")
+  invoiceFooter  String?
+  upiId          String? // VPA for the "scan & pay" QR on generated bills, e.g. restaurant@upi
+  orderSeq       Int      @default(0) // manual counter — see note at top of file
+  billSeq        Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  users          User[]
+  tables         RestaurantTable[]
+  categories     MenuCategory[]
+  menuItems      MenuItem[]
+  orders         Order[]
+  bills          Bill[]
+  shifts         Shift[]
+  notes          Note[]
+  maintenance    MaintenanceRecord[]
+  auditLogs      AuditLog[]
+  branches       Branch[]
+}
+
+// ---------------------------------------------------------------------------
+// BRANCHES
+// ---------------------------------------------------------------------------
+// Branches are entirely optional. A restaurant that never creates one never
+// sees a `branchId` set anywhere — every branch-aware field below is
+// nullable and defaults to null, so the app behaves exactly as it did
+// before this model existed. Once branches exist, staff/tables/menu can be
+// assigned to one, and each non-owner role only sees their own branch's
+// data (see src/lib/branchScope.ts). The OWNER role always sees every
+// branch at once — branches are a way to split floor operations, not a
+// second layer of tenancy.
+//
+// Order/Bill numbering deliberately stays a single restaurant-wide sequence
+// (Restaurant.orderSeq / billSeq) rather than a per-branch one — simpler,
+// and avoids any risk of two branches minting the same order/bill number
+// (which are globally @unique).
+model Branch {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  restaurantId String   @db.ObjectId
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  name         String
+  address      String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  users        User[]
+  tables       RestaurantTable[]
+  categories   MenuCategory[]
+  menuItems    MenuItem[]
+  orders       Order[]
+  bills        Bill[]
+  shifts       Shift[]
+
+  @@unique([restaurantId, name])
+  @@index([restaurantId])
+}
+
+model User {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  email         String   @unique
+  passwordHash  String
+  role          String   // Role — see src/lib/enums.ts
+  active        Boolean  @default(true)
+  restaurantId  String   @db.ObjectId
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id])
+  branchId      String?  @db.ObjectId // optional — see Branch model note above
+  branch        Branch?  @relation(fields: [branchId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  ordersTaken   Order[]  @relation("WaiterOrders")
+  ordersHandled Order[]  @relation("KitchenOrders")
+  billsIssued   Bill[]   @relation("BillsIssuedBy")
+  payments      Payment[] @relation("PaymentsReceivedBy")
+  shifts        Shift[]  @relation("ShiftCashier")
+  notes         Note[]   @relation("NotesCreatedBy")
+  maintenanceReported MaintenanceRecord[] @relation("MaintenanceReportedBy")
+  auditLogs     AuditLog[]
+  sessions      Session[]
+
+  @@index([restaurantId])
+}
+
+model Session {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// TABLES
+// ---------------------------------------------------------------------------
+
+model RestaurantTable {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  number       String
+  capacity     Int
+  section      String?
+  status       String   @default("AVAILABLE") // TableStatus — see src/lib/enums.ts
+  restaurantId String   @db.ObjectId
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  branchId     String?  @db.ObjectId // optional — see Branch model note above
+  branch       Branch?  @relation(fields: [branchId], references: [id])
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orders       Order[]
+  sessions     TableSession[]
+
+  @@unique([restaurantId, branchId, number])
+}
+
+// ---------------------------------------------------------------------------
+// MENU
+// ---------------------------------------------------------------------------
+
+model MenuCategory {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  restaurantId String   @db.ObjectId
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  branchId     String?  @db.ObjectId // optional — null means shared across every branch
+  branch       Branch?  @relation(fields: [branchId], references: [id])
+  sortOrder    Int      @default(0)
+  active       Boolean  @default(true)
+
+  items        MenuItem[]
+
+  @@unique([restaurantId, branchId, name])
+}
+
+model MenuItem {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  description    String?
+  price          Float
+  imageUrl       String?
+  isVeg          Boolean  @default(true)
+  available      Boolean  @default(true)
+  prepTimeMins   Int      @default(10)
+  taxCategory    String   @default("standard")
+  categoryId     String   @db.ObjectId
+  category       MenuCategory @relation(fields: [categoryId], references: [id])
+  restaurantId   String   @db.ObjectId
+  restaurant     Restaurant @relation(fields: [restaurantId], references: [id])
+  branchId       String?  @db.ObjectId // optional — inherited from its category at creation
+  branch         Branch?  @relation(fields: [branchId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  orderItems     OrderItem[]
+}
+
+// ---------------------------------------------------------------------------
+// ORDERS  (a "table session" groups multiple order rounds together so they
+// can be billed as one combined bill — see TableSession)
+// ---------------------------------------------------------------------------
+
+model TableSession {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  tableId      String   @db.ObjectId
+  table        RestaurantTable @relation(fields: [tableId], references: [id])
+  openedAt     DateTime @default(now())
+  closedAt     DateTime?
+  orders       Order[]
+  bill         Bill?
+
+  @@index([tableId])
+}
+
+model Order {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderNumber   Int      @unique // assigned manually from Restaurant.orderSeq — see note at top of file
+  restaurantId  String   @db.ObjectId
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id])
+  branchId      String?  @db.ObjectId // optional — copied from the table's branch at creation
+  branch        Branch?  @relation(fields: [branchId], references: [id])
+  tableId       String   @db.ObjectId
+  table         RestaurantTable @relation(fields: [tableId], references: [id])
+  sessionId     String   @db.ObjectId
+  session       TableSession @relation(fields: [sessionId], references: [id])
+  waiterId      String   @db.ObjectId
+  waiter        User     @relation("WaiterOrders", fields: [waiterId], references: [id])
+  kitchenStaffId String? @db.ObjectId
+  kitchenStaff  User?    @relation("KitchenOrders", fields: [kitchenStaffId], references: [id])
+  status        String   @default("PENDING") // OrderStatus — see src/lib/enums.ts
+  customerNote  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  preparingAt   DateTime?
+  readyAt       DateTime?
+  servedAt      DateTime?
+  cancelledAt   DateTime?
+
+  items         OrderItem[]
+
+  @@index([status])
+  @@index([tableId])
+}
+
+model OrderItem {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderId     String   @db.ObjectId
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId  String   @db.ObjectId
+  menuItem    MenuItem @relation(fields: [menuItemId], references: [id])
+  nameSnapshot  String
+  quantity    Int
+  unitPrice   Float   // snapshot at time of order — menu prices may change later
+  total       Float
+  notes       String?
+}
+
+// ---------------------------------------------------------------------------
+// BILLING
+// ---------------------------------------------------------------------------
+
+model Bill {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  billNumber      Int      @unique // assigned manually from Restaurant.billSeq — see note at top of file
+  restaurantId    String   @db.ObjectId
+  restaurant      Restaurant @relation(fields: [restaurantId], references: [id])
+  branchId        String?  @db.ObjectId // optional — copied from the table's branch at creation
+  branch          Branch?  @relation(fields: [branchId], references: [id])
+  sessionId       String   @unique @db.ObjectId
+  session         TableSession @relation(fields: [sessionId], references: [id])
+  subtotal        Float
+  taxAmount       Float
+  serviceCharge   Float    @default(0)
+  discountAmount  Float    @default(0)
+  discountReason  String?
+  total           Float
+  amountPaid      Float    @default(0)
+  status          String   @default("BILLED") // OrderStatus — BILLED -> PAID -> CLOSED
+  issuedById      String   @db.ObjectId
+  issuedBy        User     @relation("BillsIssuedBy", fields: [issuedById], references: [id])
+  createdAt       DateTime @default(now())
+  paidAt          DateTime?
+
+  payments        Payment[]
+}
+
+model Payment {
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  billId               String   @db.ObjectId
+  bill                 Bill     @relation(fields: [billId], references: [id])
+  amount               Float
+  method               String   // PaymentMethod — see src/lib/enums.ts
+  transactionReference String?
+  receivedById         String   @db.ObjectId
+  receivedBy           User     @relation("PaymentsReceivedBy", fields: [receivedById], references: [id])
+  paidAt               DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// SHIFTS
+// ---------------------------------------------------------------------------
+
+model Shift {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  restaurantId  String   @db.ObjectId
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id])
+  branchId      String?  @db.ObjectId // optional — copied from the cashier's branch at open time
+  branch        Branch?  @relation(fields: [branchId], references: [id])
+  cashierId     String   @db.ObjectId
+  cashier       User     @relation("ShiftCashier", fields: [cashierId], references: [id])
+  status        String   @default("OPEN") // ShiftStatus — see src/lib/enums.ts
+  openingCash   Float    @default(0)
+  closingCashActual Float?
+  openedAt      DateTime @default(now())
+  closedAt      DateTime?
+}
+
+// ---------------------------------------------------------------------------
+// NOTES / MAINTENANCE / AUDIT
+// ---------------------------------------------------------------------------
+
+model Note {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  restaurantId  String   @db.ObjectId
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id])
+  title         String
+  description   String?
+  priority      String   @default("MEDIUM") // NotePriority — see src/lib/enums.ts
+  status        String   @default("OPEN")   // NoteStatus — see src/lib/enums.ts
+  createdById   String   @db.ObjectId
+  createdBy     User     @relation("NotesCreatedBy", fields: [createdById], references: [id])
+  createdAt     DateTime @default(now())
+}
+
+model MaintenanceRecord {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  restaurantId  String   @db.ObjectId
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id])
+  equipment     String
+  problem       String
+  description   String?
+  priority      String   @default("MEDIUM") // MaintenancePriority — see src/lib/enums.ts
+  status        String   @default("OPEN")   // MaintenanceStatus — see src/lib/enums.ts
+  assignedTo    String?
+  cost          Float?
+  reportedById  String   @db.ObjectId
+  reportedBy    User     @relation("MaintenanceReportedBy", fields: [reportedById], references: [id])
+  createdAt     DateTime @default(now())
+  completedAt   DateTime?
+}
+
+model AuditLog {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  restaurantId  String   @db.ObjectId
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id])
+  userId        String?  @db.ObjectId
+  user          User?    @relation(fields: [userId], references: [id])
+  action        String
+  entityType    String?
+  entityId      String?
+  details       String?
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([restaurantId])
+}
