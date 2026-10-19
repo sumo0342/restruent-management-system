@@ -11,3 +11,4 @@ dev.db-journal
 coverage/
 .DS_Store
 npm-debug.log*
+*.tsbuildinfo
