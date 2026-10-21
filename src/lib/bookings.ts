@@ -1,6 +1,8 @@
 import fs from "fs";
 import path from "path";
 
+import os from "os";
+
 export type BookingStatus = "CONFIRMED" | "SEATED" | "COMPLETED" | "CANCELLED";
 
 export type TableBooking = {
@@ -24,16 +26,36 @@ export type TableBooking = {
   updatedAt: string;
 };
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const BOOKINGS_FILE = path.join(DATA_DIR, "table-bookings.json");
-
-function ensureFileExists() {
-  try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
+function getBookingsFilePath(): string {
+  // In serverless environments like Vercel, the app root is read-only.
+  // Use os.tmpdir() so writes do not trigger EROFS errors.
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    const tmpFile = path.join(os.tmpdir(), "table-bookings.json");
+    if (!fs.existsSync(tmpFile)) {
+      const defaultFile = path.join(process.cwd(), "data", "table-bookings.json");
+      try {
+        if (fs.existsSync(defaultFile)) {
+          fs.copyFileSync(defaultFile, tmpFile);
+        } else {
+          fs.writeFileSync(tmpFile, "[]", "utf-8");
+        }
+      } catch (err) {
+        console.error("Error setting up tmp bookings file:", err);
+      }
     }
-    if (!fs.existsSync(BOOKINGS_FILE)) {
-      fs.writeFileSync(BOOKINGS_FILE, JSON.stringify([], null, 2), "utf-8");
+    return tmpFile;
+  }
+  return path.join(process.cwd(), "data", "table-bookings.json");
+}
+
+function ensureFileExists(filePath: string) {
+  try {
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    if (!fs.existsSync(filePath)) {
+      fs.writeFileSync(filePath, JSON.stringify([], null, 2), "utf-8");
     }
   } catch (err) {
     console.error("Error initializing bookings storage:", err);
@@ -41,9 +63,10 @@ function ensureFileExists() {
 }
 
 export function readAllBookings(): TableBooking[] {
-  ensureFileExists();
+  const filePath = getBookingsFilePath();
+  ensureFileExists(filePath);
   try {
-    const raw = fs.readFileSync(BOOKINGS_FILE, "utf-8");
+    const raw = fs.readFileSync(filePath, "utf-8");
     return JSON.parse(raw || "[]");
   } catch (err) {
     console.error("Error reading bookings file:", err);
@@ -52,9 +75,10 @@ export function readAllBookings(): TableBooking[] {
 }
 
 export function writeAllBookings(bookings: TableBooking[]): boolean {
-  ensureFileExists();
+  const filePath = getBookingsFilePath();
+  ensureFileExists(filePath);
   try {
-    fs.writeFileSync(BOOKINGS_FILE, JSON.stringify(bookings, null, 2), "utf-8");
+    fs.writeFileSync(filePath, JSON.stringify(bookings, null, 2), "utf-8");
     return true;
   } catch (err) {
     console.error("Error writing bookings file:", err);

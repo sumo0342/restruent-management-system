@@ -14,6 +14,7 @@ export async function GET() {
         table: true,
         waiter: { select: { name: true } },
         items: true,
+        restaurant: { select: { name: true } },
       },
       orderBy: { createdAt: "asc" },
     });

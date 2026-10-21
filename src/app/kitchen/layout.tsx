@@ -9,7 +9,7 @@ export default async function KitchenLayout({ children }: { children: React.Reac
 
   return (
     <div className="min-h-screen bg-transparent text-slate-100 relative">
-      <header className="flex items-center justify-between px-6 py-4 bg-[rgba(11,15,26,0.82)] backdrop-blur-xl border-b border-white/10 sticky top-0 z-30 shadow-lg">
+      <header className="flex items-center justify-between px-6 py-4 bg-[rgba(11,15,26,0.82)] backdrop-blur-xl border-b border-white/10 sticky top-0 z-30 shadow-lg print:hidden">
         <div>
           <p className="font-display text-xl font-bold text-white tracking-wide">Kitchen Display</p>
           <p className="text-xs text-slate-400 font-medium">{user.name}</p>
