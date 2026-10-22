@@ -3,8 +3,12 @@ import { getCurrentUser } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import fs from "fs/promises";
 import path from "path";
+import os from "os";
 
-const UPLOADS_DIR = path.join(process.cwd(), "public", "uploads");
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const UPLOADS_DIR = isServerless
+  ? path.join(os.tmpdir(), "uploads")
+  : path.join(process.cwd(), "public", "uploads");
 const QR_FILE = path.join(UPLOADS_DIR, "owner-qr.png");
 const CONFIG_FILE = path.join(UPLOADS_DIR, "qr-config.json");
 
@@ -28,12 +32,30 @@ async function readConfig() {
   }
   return {
     activeType: "CUSTOM",
-    url: "/uploads/owner-qr.png",
+    url: "/api/owner/upload-qr?file=1",
     updatedAt: new Date().toISOString(),
   };
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const url = new URL(req.url);
+  if (url.searchParams.get("file") === "1") {
+    try {
+      if (await fileExists(QR_FILE)) {
+        const fileBuffer = await fs.readFile(QR_FILE);
+        return new Response(fileBuffer, {
+          headers: {
+            "Content-Type": "image/png",
+            "Cache-Control": "public, max-age=60",
+          },
+        });
+      }
+    } catch {
+      // not found
+    }
+    return new Response("Not found", { status: 404 });
+  }
+
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
@@ -41,14 +63,15 @@ export async function GET() {
 
   const hasCustom = await fileExists(QR_FILE);
   const config = await readConfig();
+  const qrUrl = hasCustom ? "/api/owner/upload-qr?file=1" : null;
 
   return NextResponse.json({
     ok: true,
     data: {
       hasCustomQr: hasCustom,
-      customQrUrl: hasCustom ? "/uploads/owner-qr.png" : null,
-      activeType: hasCustom ? "CUSTOM" : "DYNAMIC",
-      activeQrUrl: hasCustom ? "/uploads/owner-qr.png" : null,
+      customQrUrl: qrUrl,
+      activeType: hasCustom ? (config.activeType || "CUSTOM") : "DYNAMIC",
+      activeQrUrl: qrUrl,
       updatedAt: config.updatedAt,
     },
   });
@@ -92,7 +115,7 @@ export async function POST(req: NextRequest) {
 
     const config = {
       activeType: hasCustom ? "CUSTOM" : "DYNAMIC",
-      url: hasCustom ? "/uploads/owner-qr.png" : null,
+      url: hasCustom ? "/api/owner/upload-qr?file=1" : null,
       updatedAt: new Date().toISOString(),
     };
 
