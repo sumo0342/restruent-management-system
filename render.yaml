@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: restaurant-management-system
+    runtime: node
+    plan: free
+    buildCommand: npm install && npx prisma db push && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: RESTAURANT_NAME
+        value: Spice Route Kitchen
+      - key: RESTAURANT_TIMEZONE
+        value: Asia/Kolkata
